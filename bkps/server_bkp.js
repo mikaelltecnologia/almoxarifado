@@ -1,0 +1,490 @@
+const express = require('express');
+const session = require('express-session');
+const bcrypt = require('bcryptjs');
+const path = require('path');
+const db = require('./db');
+
+const app = express();
+
+app.use(express.json());
+app.use(session({
+  secret: 'almoxarifado-secret-troque-isso',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { maxAge: 1000 * 60 * 60 * 8 }
+}));
+app.use(express.static(path.join(__dirname, 'public')));
+
+function requireLogin(req, res, next) {
+  if (!req.session.user) return res.status(401).json({ error: 'Não autenticado' });
+  next();
+}
+
+// ---------- AUTH ----------
+app.post('/api/login', (req, res) => {
+  const { username, password } = req.body;
+  const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
+  if (!user || !bcrypt.compareSync(password, user.password)) {
+    return res.status(401).json({ error: 'Usuário ou senha inválidos' });
+  }
+  req.session.user = { id: user.id, username: user.username, role: user.role };
+  res.json({ ok: true, user: req.session.user });
+});
+
+app.post('/api/logout', (req, res) => {
+  req.session.destroy(() => res.json({ ok: true }));
+});
+
+app.get('/api/session', (req, res) => {
+  res.json({ user: req.session.user || null });
+});
+
+app.use('/api', requireLogin); // protege tudo abaixo
+
+// ---------- CADASTROS ----------
+
+app.get('/api/funcionarios', (req, res) => {
+  const lista = db.prepare('SELECT * FROM funcionarios ORDER BY nome').all();
+  res.json(lista);
+});
+
+app.get('/api/funcionarios/:codigo', (req, res) => {
+  const f = db.prepare('SELECT * FROM funcionarios WHERE codigo = ?').get(req.params.codigo);
+  if (!f) return res.status(404).json({ error: 'Funcionário não encontrado' });
+  res.json(f);
+});
+
+app.post('/api/funcionarios', (req, res) => {
+  const { nome, data_nascimento, cargo, data_admissao, data_demissao } = req.body;
+  if (!nome) return res.status(400).json({ error: 'Nome é obrigatório' });
+
+  const r = db.prepare(`
+    INSERT INTO funcionarios (nome, data_nascimento, cargo, data_admissao, data_demissao)
+    VALUES (?, ?, ?, ?, ?)
+  `).run(nome, data_nascimento || null, cargo || null, data_admissao || null, data_demissao || null);
+
+  res.json({ ok: true, codigo: r.lastInsertRowid });
+});
+
+app.put('/api/funcionarios/:codigo/baixa', (req, res) => {
+  const info = db.prepare('UPDATE funcionarios SET ativo = 0, data_baixa = ? WHERE codigo = ?')
+    .run(new Date().toISOString(), req.params.codigo);
+
+  if (info.changes === 0) {
+    return res.status(404).json({ error: 'Funcionário não encontrado' });
+  }
+  res.json({ ok: true });
+});
+
+app.delete('/api/funcionarios/:codigo', (req, res) => {
+  const codigo = req.params.codigo;
+
+  const emprestimoAtivo = db.prepare(
+    'SELECT * FROM emprestimos WHERE funcionario_codigo = ? AND data_devolucao IS NULL'
+  ).get(codigo);
+
+  const epiRetornavelPendente = db.prepare(`
+    SELECT re.* FROM retiradas_epi re
+    JOIN epis e ON e.codigo = re.epi_codigo
+    WHERE re.funcionario_codigo = ? 
+      AND re.data_devolucao IS NULL 
+      AND e.retornavel = 1
+  `).get(codigo);
+
+  if (emprestimoAtivo) {
+    return res.status(400).json({ error: 'Funcionário possui equipamento emprestado. Devolva antes de excluir.' });
+  }
+  if (epiRetornavelPendente) {
+    return res.status(400).json({ error: 'Funcionário possui EPI retornável (ex: capacete, bota) não devolvido. Registre a devolução antes de excluir.' });
+  }
+
+  const info = db.prepare('DELETE FROM funcionarios WHERE codigo = ?').run(codigo);
+  if (info.changes === 0) {
+    return res.status(404).json({ error: 'Funcionário não encontrado' });
+  }
+  res.json({ ok: true });
+});
+
+
+app.get('/api/fornecedores', (req, res) => res.json(db.prepare('SELECT * FROM fornecedores').all()));
+
+app.post('/api/fornecedores', (req, res) => {
+  const { nome, contato } = req.body;
+  db.prepare('INSERT INTO fornecedores (nome, contato) VALUES (?, ?)').run(nome, contato);
+  res.json({ ok: true });
+});
+
+app.delete('/api/fornecedores/:id', (req, res) => {
+  const id = req.params.id;
+  const emUso = db.prepare('SELECT 1 FROM produtos WHERE fornecedor_id = ?').get(id);
+
+  if (emUso) {
+    return res.status(400).json({ error: 'Não é possível excluir: fornecedor vinculado a um ou mais produtos.' });
+  }
+
+  const info = db.prepare('DELETE FROM fornecedores WHERE id = ?').run(id);
+  if (info.changes === 0) {
+    return res.status(404).json({ error: 'Fornecedor não encontrado' });
+  }
+  res.json({ ok: true });
+});
+
+app.get('/api/unidades', (req, res) => res.json(db.prepare('SELECT * FROM unidades ORDER BY nome').all()));
+
+app.post('/api/unidades', (req, res) => {
+  const { nome, sigla } = req.body;
+  if (!nome || !sigla) return res.status(400).json({ error: 'Nome e sigla são obrigatórios' });
+  const r = db.prepare('INSERT INTO unidades (nome, sigla) VALUES (?, ?)').run(nome, sigla);
+  res.json({ ok: true, id: r.lastInsertRowid });
+});
+
+app.delete('/api/unidades/:id', (req, res) => {
+  const id = req.params.id;
+  const emUsoConsumivel = db.prepare('SELECT 1 FROM consumiveis WHERE unidade_id = ?').get(id);
+  const emUsoProduto = db.prepare('SELECT 1 FROM produtos WHERE unidade_id = ?').get(id);
+  if (emUsoConsumivel || emUsoProduto) {
+    return res.status(400).json({ error: 'Não é possível excluir: unidade vinculada a consumível ou produto.' });
+  }
+  const info = db.prepare('DELETE FROM unidades WHERE id = ?').run(id);
+  if (info.changes === 0) return res.status(404).json({ error: 'Unidade não encontrada' });
+  res.json({ ok: true });
+});
+
+app.delete('/api/tipos-ferramentas/:id', (req, res) => {
+  const id = req.params.id;
+  const emUso = db.prepare('SELECT 1 FROM equipamentos WHERE tipo_id = ?').get(id);
+  if (emUso) return res.status(400).json({ error: 'Não é possível excluir: tipo vinculado a equipamento.' });
+  const info = db.prepare('DELETE FROM tipos_ferramentas WHERE id = ?').run(id);
+  if (info.changes === 0) return res.status(404).json({ error: 'Tipo não encontrado' });
+  res.json({ ok: true });
+});
+
+
+app.get('/api/tipos-ferramentas', (req, res) => res.json(db.prepare('SELECT * FROM tipos_ferramentas').all()));
+app.post('/api/tipos-ferramentas', (req, res) => {
+  db.prepare('INSERT INTO tipos_ferramentas (nome) VALUES (?)').run(req.body.nome);
+  res.json({ ok: true });
+});
+
+
+app.get('/api/equipamentos', (req, res) => {
+  const lista = db.prepare(`
+    SELECT eq.*, tf.nome as tipo_nome, fo.nome as fornecedor_nome
+    FROM equipamentos eq
+    LEFT JOIN tipos_ferramentas tf ON tf.id = eq.tipo_id
+    LEFT JOIN fornecedores fo ON fo.id = eq.fornecedor_id
+    ORDER BY eq.nome
+  `).all();
+  res.json(lista);
+});
+
+app.post('/api/equipamentos', (req, res) => {
+  const { tag, nome, tipo_id, fornecedor_id } = req.body;
+  if (!tag || !nome) return res.status(400).json({ error: 'Tag e nome são obrigatórios' });
+  db.prepare('INSERT INTO equipamentos (tag, nome, tipo_id, fornecedor_id) VALUES (?, ?, ?, ?)')
+    .run(tag, nome, tipo_id || null, fornecedor_id || null);
+  res.json({ ok: true });
+});
+
+app.delete('/api/equipamentos/:tag', (req, res) => {
+  const tag = req.params.tag;
+  const emprestimoAtivo = db.prepare('SELECT 1 FROM emprestimos WHERE equipamento_tag = ? AND data_devolucao IS NULL').get(tag);
+  if (emprestimoAtivo) return res.status(400).json({ error: 'Equipamento está emprestado. Devolva antes de excluir.' });
+  const info = db.prepare('DELETE FROM equipamentos WHERE tag = ?').run(tag);
+  if (info.changes === 0) return res.status(404).json({ error: 'Equipamento não encontrado' });
+  res.json({ ok: true });
+});
+
+
+app.get('/api/epis', (req, res) => res.json(db.prepare('SELECT * FROM epis').all()));
+app.post('/api/epis', (req, res) => {
+  const { nome, estoque, estoque_minimo, retornavel } = req.body;
+  const r = db.prepare('INSERT INTO epis (nome, estoque, estoque_minimo, retornavel) VALUES (?, ?, ?, ?)')
+    .run(nome, estoque || 0, estoque_minimo || 0, retornavel ? 1 : 0);
+  res.json({ ok: true, codigo: r.lastInsertRowid });
+});
+
+app.delete('/api/epis/:codigo', (req, res) => {
+  const codigo = req.params.codigo;
+  const pendente = db.prepare('SELECT 1 FROM retiradas_epi WHERE epi_codigo = ? AND data_devolucao IS NULL').get(codigo);
+  if (pendente) return res.status(400).json({ error: 'Existem retiradas pendentes deste EPI.' });
+  const info = db.prepare('DELETE FROM epis WHERE codigo = ?').run(codigo);
+  if (info.changes === 0) return res.status(404).json({ error: 'EPI não encontrado' });
+  res.json({ ok: true });
+});
+
+app.get('/api/consumiveis', (req, res) => {
+  const lista = db.prepare(`
+    SELECT c.*, u.sigla as unidade_sigla, u.nome as unidade_nome
+    FROM consumiveis c
+    LEFT JOIN unidades u ON u.id = c.unidade_id
+    ORDER BY c.nome
+  `).all();
+  res.json(lista);
+});
+
+app.post('/api/consumiveis', (req, res) => {
+  const { nome, unidade_id, estoque, estoque_minimo } = req.body;
+  if (!nome) return res.status(400).json({ error: 'Nome é obrigatório' });
+  const r = db.prepare('INSERT INTO consumiveis (nome, unidade_id, estoque, estoque_minimo) VALUES (?, ?, ?, ?)')
+    .run(nome, unidade_id || null, estoque || 0, estoque_minimo || 0);
+  res.json({ ok: true, codigo: r.lastInsertRowid });
+});
+
+app.delete('/api/consumiveis/:codigo', (req, res) => {
+  const info = db.prepare('DELETE FROM consumiveis WHERE codigo = ?').run(req.params.codigo);
+  if (info.changes === 0) return res.status(404).json({ error: 'Consumível não encontrado' });
+  res.json({ ok: true });
+});
+
+app.get('/api/produtos', (req, res) => {
+  const lista = db.prepare(`
+    SELECT p.*, f.nome as fornecedor_nome, u.sigla as unidade_sigla, u.nome as unidade_nome
+    FROM produtos p
+    LEFT JOIN fornecedores f ON f.id = p.fornecedor_id
+    LEFT JOIN unidades u ON u.id = p.unidade_id
+    ORDER BY p.nome
+  `).all();
+  res.json(lista);
+});
+
+app.post('/api/produtos', (req, res) => {
+  const { nome, fornecedor_id, unidade_id, estoque, estoque_minimo } = req.body;
+  if (!nome) return res.status(400).json({ error: 'Nome é obrigatório' });
+  const r = db.prepare('INSERT INTO produtos (nome, fornecedor_id, unidade_id, estoque, estoque_minimo) VALUES (?, ?, ?, ?, ?)')
+    .run(nome, fornecedor_id || null, unidade_id || null, estoque || 0, estoque_minimo || 0);
+  res.json({ ok: true, codigo: r.lastInsertRowid });
+});
+
+app.delete('/api/produtos/:codigo', (req, res) => {
+  const info = db.prepare('DELETE FROM produtos WHERE codigo = ?').run(req.params.codigo);
+  if (info.changes === 0) return res.status(404).json({ error: 'Produto não encontrado' });
+  res.json({ ok: true });
+});
+
+
+// ---------- MOVIMENTAÇÃO: EMPRÉSTIMO DE EQUIPAMENTO ----------
+app.get('/api/emprestimos', (req, res) => {
+  const ativos = req.query.ativo === 'true';
+  const sql = ativos
+    ? `SELECT e.*, f.nome as funcionario_nome, eq.nome as equipamento_nome
+       FROM emprestimos e
+       JOIN funcionarios f ON f.codigo = e.funcionario_codigo
+       JOIN equipamentos eq ON eq.tag = e.equipamento_tag
+       WHERE e.data_devolucao IS NULL`
+    : `SELECT e.*, f.nome as funcionario_nome, eq.nome as equipamento_nome
+       FROM emprestimos e
+       JOIN funcionarios f ON f.codigo = e.funcionario_codigo
+       JOIN equipamentos eq ON eq.tag = e.equipamento_tag`;
+  res.json(db.prepare(sql).all());
+});
+
+app.post('/api/emprestimos', (req, res) => {
+  const { funcionario_codigo, equipamento_tag, observacao } = req.body;
+
+  const equipamento = db.prepare('SELECT * FROM equipamentos WHERE tag = ?').get(equipamento_tag);
+  if (!equipamento) return res.status(404).json({ error: 'Equipamento não encontrado' });
+  if (equipamento.status === 'emprestado') {
+    return res.status(400).json({ error: 'Equipamento já está emprestado e não foi devolvido' });
+  }
+  if (equipamento.status === 'baixado') {
+    return res.status(400).json({ error: 'Equipamento foi baixado do estoque' });
+  }
+
+  const funcionario = db.prepare('SELECT * FROM funcionarios WHERE codigo = ?').get(funcionario_codigo);
+  if (!funcionario) return res.status(404).json({ error: 'Funcionário não encontrado' });
+
+  const agora = new Date().toISOString();
+  db.prepare('INSERT INTO emprestimos (funcionario_codigo, equipamento_tag, data_emprestimo, observacao) VALUES (?, ?, ?, ?)')
+    .run(funcionario_codigo, equipamento_tag, agora, observacao || null);
+  db.prepare('UPDATE equipamentos SET status = ? WHERE tag = ?').run('emprestado', equipamento_tag);
+
+  res.json({ ok: true });
+});
+
+app.put('/api/emprestimos/:id/devolver', (req, res) => {
+  const emp = db.prepare('SELECT * FROM emprestimos WHERE id = ?').get(req.params.id);
+  if (!emp) return res.status(404).json({ error: 'Empréstimo não encontrado' });
+  if (emp.data_devolucao) return res.status(400).json({ error: 'Já devolvido' });
+
+  db.prepare('UPDATE emprestimos SET data_devolucao = ? WHERE id = ?').run(new Date().toISOString(), req.params.id);
+  db.prepare('UPDATE equipamentos SET status = ? WHERE tag = ?').run('disponivel', emp.equipamento_tag);
+  res.json({ ok: true });
+});
+
+// buscar 1 equipamento (usado pra exibir marca no empréstimo)
+app.get('/api/equipamentos/:tag', (req, res) => {
+  const eq = db.prepare(`
+    SELECT eq.*, tf.nome as tipo_nome, fo.nome as fornecedor_nome
+    FROM equipamentos eq
+    LEFT JOIN tipos_ferramentas tf ON tf.id = eq.tipo_id
+    LEFT JOIN fornecedores fo ON fo.id = eq.fornecedor_id
+    WHERE eq.tag = ?
+  `).get(req.params.tag);
+  if (!eq) return res.status(404).json({ error: 'Equipamento não encontrado' });
+  res.json(eq);
+});
+
+
+// ---------- MOVIMENTAÇÃO: EPI ----------
+app.get('/api/retiradas-epi', (req, res) => {
+  const { pendente } = req.query;
+
+  let sql = `
+    SELECT re.*, e.nome as epi_nome, f.nome as funcionario_nome
+    FROM retiradas_epi re
+    JOIN epis e ON e.codigo = re.epi_codigo
+    JOIN funcionarios f ON f.codigo = re.funcionario_codigo
+  `;
+
+  if (pendente === 'true') {
+    sql += ' WHERE re.data_devolucao IS NULL AND e.retornavel = 1';
+  }
+
+  sql += ' ORDER BY re.data_retirada DESC';
+
+  const lista = db.prepare(sql).all();
+  res.json(lista);
+});
+
+app.post('/api/retiradas-epi', (req, res) => {
+  const { funcionario_codigo, epi_codigo, observacao } = req.body;
+  const epi = db.prepare('SELECT * FROM epis WHERE codigo = ?').get(epi_codigo);
+  if (!epi) return res.status(404).json({ error: 'EPI não encontrado' });
+  if (epi.estoque <= 0) return res.status(400).json({ error: 'Estoque zerado' });
+
+  db.prepare('INSERT INTO retiradas_epi (funcionario_codigo, epi_codigo, data_retirada, observacao) VALUES (?, ?, ?, ?)')
+    .run(funcionario_codigo, epi_codigo, new Date().toISOString(), observacao || null);
+  db.prepare('UPDATE epis SET estoque = estoque - 1 WHERE codigo = ?').run(epi_codigo);
+  res.json({ ok: true });
+});
+
+app.put('/api/retiradas-epi/:id/devolver', (req, res) => {
+  const retirada = db.prepare('SELECT * FROM retiradas_epi WHERE id = ?').get(req.params.id);
+  if (!retirada) return res.status(404).json({ error: 'Retirada não encontrada' });
+
+  db.prepare('UPDATE retiradas_epi SET data_devolucao = ? WHERE id = ?')
+    .run(new Date().toISOString(), req.params.id);
+
+  db.prepare('UPDATE epis SET estoque = estoque + 1 WHERE codigo = ?').run(retirada.epi_codigo);
+
+  res.json({ ok: true });
+});
+
+
+// ---------- MOVIMENTAÇÃO: CONSUMÍVEL ----------
+app.post('/api/retiradas-consumivel', (req, res) => {
+  const { funcionario_codigo, consumivel_codigo, quantidade, observacao } = req.body;
+  const qtd = quantidade || 1;
+  const item = db.prepare('SELECT * FROM consumiveis WHERE codigo = ?').get(consumivel_codigo);
+  if (!item) return res.status(404).json({ error: 'Consumível não encontrado' });
+  if (item.estoque < qtd) return res.status(400).json({ error: 'Estoque insuficiente' });
+
+  db.prepare('INSERT INTO retiradas_consumivel (funcionario_codigo, consumivel_codigo, quantidade, data_retirada, observacao) VALUES (?, ?, ?, ?, ?)')
+    .run(funcionario_codigo, consumivel_codigo, qtd, new Date().toISOString(), observacao || null);
+  db.prepare('UPDATE consumiveis SET estoque = estoque - ? WHERE codigo = ?').run(qtd, consumivel_codigo);
+  res.json({ ok: true });
+});
+
+// ---------- MOVIMENTAÇÃO: PRODUTO ----------
+app.get('/api/retiradas-produto', (req, res) => {
+  const lista = db.prepare(`
+    SELECT r.*, p.nome as produto_nome, f.nome as funcionario_nome
+    FROM retiradas_produto r
+    JOIN produtos p ON p.codigo = r.produto_codigo
+    JOIN funcionarios f ON f.codigo = r.funcionario_codigo
+    ORDER BY r.data_retirada DESC
+  `).all();
+  res.json(lista);
+});
+
+app.post('/api/retiradas-produto', (req, res) => {
+  const { funcionario_codigo, produto_codigo, quantidade, observacao } = req.body;
+  const qtd = quantidade || 1;
+  const item = db.prepare('SELECT * FROM produtos WHERE codigo = ?').get(produto_codigo);
+  if (!item) return res.status(404).json({ error: 'Produto não encontrado' });
+  if (item.estoque < qtd) return res.status(400).json({ error: 'Estoque insuficiente' });
+
+  db.prepare('INSERT INTO retiradas_produto (funcionario_codigo, produto_codigo, quantidade, data_retirada, observacao) VALUES (?, ?, ?, ?, ?)')
+    .run(funcionario_codigo, produto_codigo, qtd, new Date().toISOString(), observacao || null);
+  db.prepare('UPDATE produtos SET estoque = estoque - ? WHERE codigo = ?').run(qtd, produto_codigo);
+  res.json({ ok: true });
+});
+
+
+// ---------- FICHA DO FUNCIONÁRIO ----------
+app.get('/api/ficha/:codigo', (req, res) => {
+  const codigo = req.params.codigo;
+  const funcionario = db.prepare('SELECT * FROM funcionarios WHERE codigo = ?').get(codigo);
+  if (!funcionario) return res.status(404).json({ error: 'Funcionário não encontrado' });
+
+  const equipamentos = db.prepare(`
+    SELECT e.*, eq.nome as equipamento_nome FROM emprestimos e
+    JOIN equipamentos eq ON eq.tag = e.equipamento_tag
+    WHERE e.funcionario_codigo = ?`).all(codigo);
+
+  const epis = db.prepare(`
+    SELECT r.*, ep.nome as epi_nome FROM retiradas_epi r
+    JOIN epis ep ON ep.codigo = r.epi_codigo
+    WHERE r.funcionario_codigo = ?`).all(codigo);
+
+  const consumiveis = db.prepare(`
+    SELECT r.*, c.nome as consumivel_nome FROM retiradas_consumivel r
+    JOIN consumiveis c ON c.codigo = r.consumivel_codigo
+    WHERE r.funcionario_codigo = ?`).all(codigo);
+
+  res.json({ funcionario, equipamentos, epis, consumiveis });
+});
+
+// ---------- BAIXA DE ESTOQUE ----------
+app.get('/api/baixas-estoque', (req, res) => {
+  res.json(db.prepare('SELECT * FROM baixas_estoque ORDER BY id DESC').all());
+});
+
+app.post('/api/baixas-estoque', (req, res) => {
+  const { item_tipo, item_codigo, item_nome, motivo } = req.body;
+  const agora = new Date().toISOString();
+
+  db.prepare('INSERT INTO baixas_estoque (item_tipo, item_codigo, item_nome, data_baixa, motivo) VALUES (?, ?, ?, ?, ?)')
+    .run(item_tipo, item_codigo, item_nome, agora, motivo || null);
+
+  if (item_tipo === 'equipamento') {
+    db.prepare('UPDATE equipamentos SET status = ? WHERE tag = ?').run('baixado', item_codigo);
+  } else if (item_tipo === 'epi') {
+    db.prepare('UPDATE epis SET estoque = 0 WHERE codigo = ?').run(item_codigo);
+  } else if (item_tipo === 'consumivel') {
+    db.prepare('UPDATE consumiveis SET estoque = 0 WHERE codigo = ?').run(item_codigo);
+  } else if (item_tipo === 'produto') {
+    db.prepare('UPDATE produtos SET estoque = 0 WHERE codigo = ?').run(item_codigo);
+  }
+
+  res.json({ ok: true });
+});
+
+// ---------- DASHBOARD ----------
+app.get('/api/dashboard', (req, res) => {
+  const disponiveis = db.prepare("SELECT * FROM equipamentos WHERE status = 'disponivel'").all();
+  const emprestados = db.prepare(`
+    SELECT e.*, f.nome as funcionario_nome, eq.nome as equipamento_nome
+    FROM emprestimos e
+    JOIN funcionarios f ON f.codigo = e.funcionario_codigo
+    JOIN equipamentos eq ON eq.tag = e.equipamento_tag
+    WHERE e.data_devolucao IS NULL`).all();
+
+  const epiBaixo = db.prepare('SELECT * FROM epis WHERE estoque <= estoque_minimo').all();
+  const consumivelBaixo = db.prepare('SELECT * FROM consumiveis WHERE estoque <= estoque_minimo').all();
+  const produtoBaixo = db.prepare('SELECT * FROM produtos WHERE estoque <= estoque_minimo').all();
+
+  res.json({
+    equipamentos_disponiveis: disponiveis,
+    equipamentos_emprestados: emprestados,
+    estoque_baixo: {
+      epis: epiBaixo,
+      consumiveis: consumivelBaixo,
+      produtos: produtoBaixo
+    }
+  });
+});
+
+const PORT = 3000;
+app.listen(PORT, () => console.log(`Servidor rodando em http://localhost:${PORT}`));

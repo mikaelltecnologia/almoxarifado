@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="Almoxarifado" Version="1.0.0.0" Manufacturer="Mikaell" UpgradeCode="a1b2c3d4-1234-5678-9abc-def012345678">
+
+    <MajorUpgrade DowngradeErrorMessage="Uma versão mais nova já está instalada." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="Almoxarifado">
+        <Component Id="MainExecutable" Guid="*">
+          <File Id="AlmoxarifadoExe" Source="..\dist\almoxarifado.exe" KeyPath="yes" />
+        </Component>
+      </Directory>
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Component Id="ShortcutComponent" Guid="*">
+        <Shortcut Id="AppShortcut"
+                  Name="Almoxarifado"
+                  Target="[INSTALLFOLDER]almoxarifado.exe"
+                  WorkingDirectory="INSTALLFOLDER" />
+        <RemoveFolder Id="RemoveShortcutFolder" On="uninstall" />
+        <RegistryValue Root="HKCU" Key="Software\Almoxarifado" Name="installed" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </StandardDirectory>
+
+    <Feature Id="MainFeature" Title="Almoxarifado" Level="1">
+      <ComponentRef Id="MainExecutable" />
+      <ComponentRef Id="ShortcutComponent" />
+    </Feature>
+
+    <!-- Abre o programa automaticamente ao final da instalação -->
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Iniciar o Almoxarifado agora" />
+    <Property Id="WixShellExecTarget" Value="[INSTALLFOLDER]almoxarifado.exe" />
+    <CustomAction Id="LaunchApp" BinaryRef="Wix4UtilCA_X86" DllEntry="WixShellExec" Impersonate="yes" />
+
+    <UI>
+      <ui:WixUI xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui" Id="WixUI_InstallDir" />
+    </UI>
+
+    <InstallExecuteSequence>
+      <Custom Action="LaunchApp" After="InstallFinalize">NOT Installed</Custom>
+    </InstallExecuteSequence>
+
+  </Package>
+</Wix>

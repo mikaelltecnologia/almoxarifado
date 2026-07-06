@@ -1,0 +1,37 @@
+body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; }
+.login-box { max-width: 300px; margin: 100px auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px #ccc; }
+.login-box input, .login-box button { width: 100%; padding: 8px; margin: 5px 0; box-sizing: border-box; }
+.tabs { display: flex; background: #222; }
+.tabs button { flex: 1; padding: 12px; background: #222; color: white; border: none; cursor: pointer; }
+.tabs button.active { background: #444; }
+.tab-content { padding: 20px; display: none; }
+.tab-content.active { display: block; }
+table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+th, td { border: 1px solid #ccc; padding: 6px; text-align: left; font-size: 14px; }
+.card { background: white; padding: 15px; border-radius: 6px; margin-bottom: 15px; box-shadow: 0 0 5px #ddd; }
+input, select { padding: 6px; margin: 3px; }
+button.action { padding: 6px 12px; cursor: pointer; }
+.subtabs { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
+.subtab-btn { padding: 6px 12px; cursor: pointer; border: 1px solid #ccc; background: #eee; }
+.subtab-btn.active { background: #333; color: #fff; }
+.subtab-content { display: none; }
+.subtab-content.active { display: block; }
+
+ ---------- HIDE AUTOFILL BUTTONS ----------
+input::-webkit-contacts-auto-fill-button,
+input::-webkit-credentials-auto-fill-button {
+  display: none !important;
+  visibility: hidden;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px white inset !important;
+  -webkit-text-fill-color: #000 !important;
+}
+
+

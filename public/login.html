@@ -1,18 +1,28 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<title>Login - Almoxarifado</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Almoxarifado</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="login-box">
-    <h2>Almoxarifado</h2>
-    <input id="username" placeholder="Usuário" value="admin">
-    <input id="password" type="password" placeholder="Senha" value="admin">
-    <button onclick="login()">Entrar</button>
-    <p id="erro" style="color:red"></p>
+  <div class="auth-shell">
+    <div class="auth-card">
+      <div class="auth-brand">
+        <div class="brand-mark">A</div>
+        <div>
+          <h2>Almoxarifado</h2>
+          <p>Entre para acessar o painel</p>
+        </div>
+      </div>
+      <input id="username" placeholder="Usuário" value="admin" autocomplete="username">
+      <input id="password" type="password" placeholder="Senha" value="admin" autocomplete="current-password">
+      <button onclick="login()">Entrar</button>
+      <p id="erro" class="error"></p>
+    </div>
   </div>
+
   <script>
     async function login() {
       const username = document.getElementById('username').value;

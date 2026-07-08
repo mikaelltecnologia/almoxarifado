@@ -1,26 +1,72 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<title>Almoxarifado</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Almoxarifado</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="tabs">
-    <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
-    <button class="tab-btn" data-tab="cadastros">Cadastros</button>
-    <button class="tab-btn" data-tab="movimentacao">Movimentação</button>
-    <button class="tab-btn" data-tab="ficha">Ficha do Funcionário</button>
-    <button class="tab-btn" data-tab="baixa">Baixa de Estoque</button>
-    <button onclick="logout()">Sair</button>
+  <div id="particles-js"></div>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">A</div>
+        <div>
+          <h1>Almoxarifado</h1>
+          <p>Controle moderno de estoque e operações</p>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        
+        <button class="ghost-btn" onclick="logout()">Sair</button>
+      </div>
+    </header>
+
+    <div class="content-layout">
+      <aside class="nav-panel">
+        <div class="nav-panel-title">Módulos</div>
+        <div class="tab-list">
+          <button class="tab-btn active" data-tab="cadastros">Cadastros</button>
+          <button class="tab-btn" data-tab="movimentacao">Movimentação</button>
+          <button class="tab-btn" data-tab="ficha">Ficha do Funcionário</button>
+          <button class="tab-btn" data-tab="baixa">Baixa de Estoque</button>
+        </div>
+      </aside>
+
+      <main class="content-panel">
+        <div id="cadastros" class="tab-content active"></div>
+        <div id="movimentacao" class="tab-content"></div>
+        <div id="ficha" class="tab-content"></div>
+        <div id="baixa" class="tab-content"></div>
+      </main>
+    </div>
   </div>
 
-  <div id="dashboard" class="tab-content active"></div>
-  <div id="cadastros" class="tab-content"></div>
-  <div id="movimentacao" class="tab-content"></div>
-  <div id="ficha" class="tab-content"></div>
-  <div id="baixa" class="tab-content"></div>
-
+  <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
   <script src="app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.particlesJS) {
+        particlesJS('particles-js', {
+          particles: {
+            number: { value: 70, density: { enable: true, value_area: 900 } },
+            color: { value: '#ffffff' },
+            shape: { type: 'circle' },
+            opacity: { value: 0.45, random: false },
+            size: { value: 2.3, random: true },
+            line_linked: { enable: true, distance: 140, color: '#ffffff', opacity: 0.18, width: 1 },
+            move: { enable: true, speed: 2.5, direction: 'none', random: false, straight: false, out_mode: 'out', bounce: false }
+          },
+          interactivity: {
+            detect_on: 'canvas',
+            events: { onhover: { enable: true, mode: 'repulse' }, onclick: { enable: true, mode: 'push' }, resize: true },
+            modes: { repulse: { distance: 110, duration: 0.35 }, push: { particles_nb: 3 } }
+          },
+          retina_detect: true
+        });
+      }
+    });
+  </script>
 </body>
 </html>

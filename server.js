@@ -41,6 +41,11 @@ app.get('/api/session', (req, res) => {
   res.json({ user: req.session.user || null });
 });
 
+// Rotas públicas - servir sem proteção
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+app.get('/login.html', (req, res) => res.sendFile(path.join(__dirname, 'public', 'login.html')));
+app.get('/index.html', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+
 app.use('/api', requireLogin); // protege tudo abaixo
 
 

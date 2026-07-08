@@ -595,10 +595,24 @@ button.action[style*="background:#c0392b"] {
   padding: 24px;
 }
 
+.auth-container {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
 .auth-card {
   width: min(100%, 420px);
   padding: 32px;
   border-radius: 24px;
+  background: rgba(255, 255, 255, 0.06);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .auth-card h2 {
@@ -611,12 +625,43 @@ button.action[style*="background:#c0392b"] {
   color: var(--muted);
 }
 
-.auth-card input,
-.auth-card button {
-  width: 100%;
+.auth-card .error {
+  min-height: 20px;
+  margin-top: 12px;
+  color: var(--danger);
+  font-size: 0.95rem;
 }
 
-.auth-card button {
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+  font-size: 0.95rem;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  transition: all 0.3s ease;
+}
+
+.form-group input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.form-group input:focus {
+  outline: none;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(20, 184, 166, 0.6);
+  box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.12);
+}
+
+.login-btn {
+  width: 100%;
   padding: 12px 14px;
   border: none;
   border-radius: 12px;
@@ -624,14 +669,14 @@ button.action[style*="background:#c0392b"] {
   color: white;
   font-weight: 700;
   cursor: pointer;
-  margin-top: 10px;
+  margin-top: 16px;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 16px rgba(20, 184, 166, 0.2);
 }
 
-.auth-card .error {
-  min-height: 20px;
-  margin-top: 12px;
-  color: var(--danger);
-  font-size: 0.95rem;
+.login-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(20, 184, 166, 0.3);
 }
 
 input::-webkit-contacts-auto-fill-button,

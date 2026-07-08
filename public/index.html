@@ -27,7 +27,8 @@
       <aside class="nav-panel">
         <div class="nav-panel-title">Módulos</div>
         <div class="tab-list">
-          <button class="tab-btn active" data-tab="cadastros">Cadastros</button>
+          <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
+          <button class="tab-btn" data-tab="cadastros">Cadastros</button>
           <button class="tab-btn" data-tab="movimentacao">Movimentação</button>
           <button class="tab-btn" data-tab="ficha">Ficha do Funcionário</button>
           <button class="tab-btn" data-tab="baixa">Baixa de Estoque</button>
@@ -35,7 +36,23 @@
       </aside>
 
       <main class="content-panel">
-        <div id="cadastros" class="tab-content active"></div>
+        <section class="hero-surface" aria-label="Destaque do sistema">
+          <div class="hero-glow hero-glow-left"></div>
+          <div class="hero-glow hero-glow-right"></div>
+          <div class="hero-copy">
+            <span class="hero-eyebrow">Gestão inteligente</span>
+            <h2>Controle de estoque, equipamentos e movimentações com uma experiência moderna.</h2>
+            <p>Centralize cadastros, consultas e operações do almoxarifado em um painel visual, claro e preparado para crescer com sua equipe.</p>
+            <div class="hero-highlights">
+              <span class="hero-chip">Dashboard</span>
+              <span class="hero-chip">Cadastros</span>
+              <span class="hero-chip">Suporte</span>
+            </div>
+          </div>
+        </section>
+
+        <div id="dashboard" class="tab-content active"></div>
+        <div id="cadastros" class="tab-content"></div>
         <div id="movimentacao" class="tab-content"></div>
         <div id="ficha" class="tab-content"></div>
         <div id="baixa" class="tab-content"></div>

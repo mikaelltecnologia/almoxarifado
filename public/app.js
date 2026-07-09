@@ -58,24 +58,28 @@ async function loadDashboard() {
   const el = document.getElementById('dashboard');
   el.innerHTML = `
     <div class="card">
-      <h3>Equipamentos Disponíveis (${d.equipamentos_disponiveis.length})</h3>
-      <table><tr><th>Tag</th><th>Equipamento</th></tr>
-      ${d.equipamentos_disponiveis.map(e => `<tr><td>${e.tag}</td><td>${e.nome}</td></tr>`).join('')}
-      </table>
+      <h3>Equipamentos Disponíveis <span style="font-weight:600; opacity:0.85">(${d.equipamentos_disponiveis.length})</span></h3>
+      <div class="stat-bar"><div class="stat-count">${d.equipamentos_disponiveis.length}</div></div>
+      <div class="small-list">
+        ${d.equipamentos_disponiveis.slice(0,6).map(e => `<div>${e.tag} — ${e.nome}</div>`).join('') || '<div>Nenhum equipamento disponível</div>'}
+      </div>
     </div>
 
     <div class="card">
-      <h3>Equipamentos Não Devolvidos (${d.equipamentos_emprestados.length})</h3>
-      <table><tr><th>Tag</th><th>Equipamento</th><th>Fornecedor</th><th>Funcionário</th><th>Data Empréstimo</th></tr>
-      ${d.equipamentos_emprestados.map(e => `<tr><td>${e.equipamento_tag}</td><td>${e.equipamento_nome}</td><td>${e.fornecedor_nome || '-'}</td><td>${e.funcionario_nome}</td><td>${new Date(e.data_emprestimo).toLocaleString()}</td></tr>`).join('')}
-      </table>
+      <h3>Equipamentos Não Devolvidos <span style="font-weight:600; opacity:0.85">(${d.equipamentos_emprestados.length})</span></h3>
+      <div class="stat-bar"><div class="stat-count">${d.equipamentos_emprestados.length}</div></div>
+      <div class="small-list">
+        ${d.equipamentos_emprestados.slice(0,6).map(e => `<div>${e.equipamento_tag} — ${e.equipamento_nome} <span style="opacity:0.7">(${e.funcionario_nome})</span></div>`).join('') || '<div>Sem registros</div>'}
+      </div>
     </div>
 
     <div class="card">
       <h3>Estoque Baixo</h3>
-      <b>EPIs:</b> ${d.estoque_baixo.epis.map(i => i.nome + ' (' + i.estoque + ')').join(', ') || 'nenhum'}<br>
-      <b>Consumíveis:</b> ${d.estoque_baixo.consumiveis.map(i => i.nome + ' (' + i.estoque + ')').join(', ') || 'nenhum'}<br>
-      <b>Produtos:</b> ${d.estoque_baixo.produtos.map(i => i.nome + ' (' + i.estoque + ')').join(', ') || 'nenhum'}
+      <div class="small-list">
+        <div><b>EPIs:</b> ${d.estoque_baixo.epis.map(i => i.nome + ' (' + i.estoque + ')').join(', ') || 'nenhum'}</div>
+        <div><b>Consumíveis:</b> ${d.estoque_baixo.consumiveis.map(i => i.nome + ' (' + i.estoque + ')').join(', ') || 'nenhum'}</div>
+        <div><b>Produtos:</b> ${d.estoque_baixo.produtos.map(i => i.nome + ' (' + i.estoque + ')').join(', ') || 'nenhum'}</div>
+      </div>
     </div>
   `;
 }

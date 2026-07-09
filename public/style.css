@@ -467,12 +467,30 @@ th {
   letter-spacing: 0.04em;
 }
 
-/* Make table responsive inside cards */
+/* Tables use normal layout inside cards (no forced scroll) */
 .card table {
   width: 100%;
-  display: block;
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
+  border-collapse: collapse;
+}
+
+/* Small stat bar and list for dashboard */
+.stat-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.stat-count {
+  background: rgba(20,184,166,0.14);
+  color: rgba(255,255,255,0.95);
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-weight: 700;
+}
+.small-list div {
+  padding: 6px 0;
+  color: rgba(255,255,255,0.85);
+  font-size: 0.95rem;
 }
 
 /* Improve header contrast for dark theme */

@@ -137,6 +137,39 @@ if (!colunasBaixas.includes('quantidade')) {
   db.exec('ALTER TABLE baixas_estoque ADD COLUMN quantidade INTEGER DEFAULT 1');
 }
 
+// Migração: adiciona colunas extras em funcionarios se não existirem
+const colunasFuncionarios = db.prepare("PRAGMA table_info(funcionarios)").all().map(c => c.name);
+if (!colunasFuncionarios.includes('data_nascimento')) {
+  db.exec('ALTER TABLE funcionarios ADD COLUMN data_nascimento TEXT');
+}
+if (!colunasFuncionarios.includes('cargo')) {
+  db.exec('ALTER TABLE funcionarios ADD COLUMN cargo TEXT');
+}
+if (!colunasFuncionarios.includes('data_admissao')) {
+  db.exec('ALTER TABLE funcionarios ADD COLUMN data_admissao TEXT');
+}
+if (!colunasFuncionarios.includes('data_demissao')) {
+  db.exec('ALTER TABLE funcionarios ADD COLUMN data_demissao TEXT');
+}
+
+// Migração: adiciona unidade_id em consumiveis se não existir
+const colunasConsumiveis = db.prepare("PRAGMA table_info(consumiveis)").all().map(c => c.name);
+if (!colunasConsumiveis.includes('unidade_id')) {
+  db.exec('ALTER TABLE consumiveis ADD COLUMN unidade_id INTEGER REFERENCES unidades(id)');
+}
+
+// Migração: adiciona unidade_id em produtos se não existir
+const colunasProdutos = db.prepare("PRAGMA table_info(produtos)").all().map(c => c.name);
+if (!colunasProdutos.includes('unidade_id')) {
+  db.exec('ALTER TABLE produtos ADD COLUMN unidade_id INTEGER REFERENCES unidades(id)');
+}
+
+// Migração: adiciona data_devolucao em retiradas_epi se não existir
+const colunasRetiradasEpi = db.prepare("PRAGMA table_info(retiradas_epi)").all().map(c => c.name);
+if (!colunasRetiradasEpi.includes('data_devolucao')) {
+  db.exec('ALTER TABLE retiradas_epi ADD COLUMN data_devolucao TEXT');
+}
+
 
 // Seed usuário admin
 const adminExists = db.prepare('SELECT * FROM users WHERE username = ?').get('admin');

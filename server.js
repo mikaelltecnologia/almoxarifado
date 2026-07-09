@@ -815,28 +815,27 @@ app.post('/api/baixas-estoque', (req, res) => {
 
 // ---------- DASHBOARD ----------
 app.get('/api/dashboard', (req, res) => {
-  const disponiveis = db.prepare("SELECT * FROM equipamentos WHERE status = 'disponivel'").all();
-const emprestados = db.prepare(`
-  SELECT e.*, f.nome as funcionario_nome, eq.nome as equipamento_nome, fo.nome as fornecedor_nome
-  FROM emprestimos e
-  JOIN funcionarios f ON f.codigo = e.funcionario_codigo
-  JOIN equipamentos eq ON eq.tag = e.equipamento_tag
-  LEFT JOIN fornecedores fo ON fo.id = eq.fornecedor_id
-  WHERE e.data_devolucao IS NULL`).all();
-
-  const epiBaixo = db.prepare('SELECT * FROM epis WHERE estoque_minimo > 0 AND estoque <= estoque_minimo').all();
-  const consumivelBaixo = db.prepare('SELECT * FROM consumiveis WHERE estoque_minimo > 0 AND estoque <= estoque_minimo').all();
-  const produtoBaixo = db.prepare('SELECT * FROM produtos WHERE estoque_minimo > 0 AND estoque <= estoque_minimo').all();
-
-  res.json({
-    equipamentos_disponiveis: disponiveis,
-    equipamentos_emprestados: emprestados,
-    estoque_baixo: {
-      epis: epiBaixo,
-      consumiveis: consumivelBaixo,
-      produtos: produtoBaixo
-    }
-  });
+  try {
+    const disponiveis = db.prepare("SELECT * FROM equipamentos WHERE status = 'disponivel'").all();
+    const emprestados = db.prepare(`
+      SELECT e.*, f.nome as funcionario_nome, eq.nome as equipamento_nome, fo.nome as fornecedor_nome
+      FROM emprestimos e
+      JOIN funcionarios f ON f.codigo = e.funcionario_codigo
+      JOIN equipamentos eq ON eq.tag = e.equipamento_tag
+      LEFT JOIN fornecedores fo ON fo.id = eq.fornecedor_id
+      WHERE e.data_devolucao IS NULL`).all();
+    const epiBaixo = db.prepare('SELECT * FROM epis WHERE estoque_minimo > 0 AND estoque <= estoque_minimo').all();
+    const consumivelBaixo = db.prepare('SELECT * FROM consumiveis WHERE estoque_minimo > 0 AND estoque <= estoque_minimo').all();
+    const produtoBaixo = db.prepare('SELECT * FROM produtos WHERE estoque_minimo > 0 AND estoque <= estoque_minimo').all();
+    res.json({
+      equipamentos_disponiveis: disponiveis,
+      equipamentos_emprestados: emprestados,
+      estoque_baixo: { epis: epiBaixo, consumiveis: consumivelBaixo, produtos: produtoBaixo }
+    });
+  } catch (err) {
+    console.error('Erro no dashboard:', err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 const PORT = 3000;

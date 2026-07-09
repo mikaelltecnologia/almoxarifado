@@ -1,6 +1,7 @@
-// checa sessão
+// checa sessão e carrega dashboard inicial
 fetch('/api/session').then(r => r.json()).then(d => {
   if (!d.user) window.location.href = '/login.html';
+  else loadDashboard();
 });
 
 function logout() {
@@ -54,38 +55,45 @@ function formatarDataBR(iso) {
 // ---------- DASHBOARD ----------
 
 async function loadDashboard() {
-  const d = await api('/api/dashboard');
   const el = document.getElementById('dashboard');
-  el.innerHTML = `
-    <div class="card">
-      <h3>Equipamentos Disponíveis <span style="font-weight:600; opacity:0.85">(${d.equipamentos_disponiveis.length})</span></h3>
-      <div class="stat-bar"><div class="stat-count">${d.equipamentos_disponiveis.length}</div></div>
-      <div class="small-list">
-        ${d.equipamentos_disponiveis.slice(0,6).map(e => `<div>${e.tag} — ${e.nome}</div>`).join('') || '<div>Nenhum equipamento disponível</div>'}
-      </div>
-    </div>
+  el.innerHTML = '<div class="card" style="grid-column:1/-1;text-align:center;opacity:0.7">Carregando...</div>';
+  try {
+    const d = await fetch('/api/dashboard').then(r => r.json());
+    if (d.error) throw new Error(d.error);
 
-    <div class="card">
-      <h3>Equipamentos Não Devolvidos <span style="font-weight:600; opacity:0.85">(${d.equipamentos_emprestados.length})</span></h3>
-      <div class="stat-bar"><div class="stat-count">${d.equipamentos_emprestados.length}</div></div>
-      <div class="small-list">
-        ${d.equipamentos_emprestados.slice(0,6).map(e => {
-          const days = e.data_emprestimo ? Math.floor((Date.now() - new Date(e.data_emprestimo).getTime()) / (1000*60*60*24)) : 0;
-          const badge = days > 30 ? `<span class="badge critical">Crítico ${days}d</span>` : (days > 7 ? `<span class="badge warn">Atraso ${days}d</span>` : '');
-          return `<div>${e.equipamento_tag} — ${e.equipamento_nome} <span style="opacity:0.7">(${e.funcionario_nome})</span> ${badge}</div>`;
-        }).join('') || '<div>Sem registros</div>'}
-      </div>
-    </div>
+    const disp = d.equipamentos_disponiveis || [];
+    const emp  = d.equipamentos_emprestados || [];
+    const baixo = d.estoque_baixo || { epis: [], consumiveis: [], produtos: [] };
 
-    <div class="card">
-      <h3>Estoque Baixo</h3>
-      <div class="small-list">
-        <div><b>EPIs:</b> ${d.estoque_baixo.epis.map(i => `${i.nome} (${i.estoque}) <span class="badge critical">Baixo</span>`).join(', ') || 'nenhum'}</div>
-        <div><b>Consumíveis:</b> ${d.estoque_baixo.consumiveis.map(i => `${i.nome} (${i.estoque}) <span class="badge critical">Baixo</span>`).join(', ') || 'nenhum'}</div>
-        <div><b>Produtos:</b> ${d.estoque_baixo.produtos.map(i => `${i.nome} (${i.estoque}) <span class="badge critical">Baixo</span>`).join(', ') || 'nenhum'}</div>
+    el.innerHTML = `
+      <div class="card">
+        <h3>Equipamentos Disponíveis <span style="font-weight:600;opacity:0.85">(${disp.length})</span></h3>
+        <div class="stat-bar"><div class="stat-count">${disp.length}</div></div>
+        <div class="small-list">
+          ${disp.slice(0,6).map(e => `<div>${e.tag} — ${e.nome}</div>`).join('') || '<div>Nenhum equipamento disponível</div>'}
+        </div>
       </div>
-    </div>
-  `;
+
+      <div class="card">
+        <h3>Equipamentos Não Devolvidos <span style="font-weight:600;opacity:0.85">(${emp.length})</span></h3>
+        <div class="stat-bar"><div class="stat-count">${emp.length}</div></div>
+        <div class="small-list">
+          ${emp.slice(0,6).map(e => `<div>${e.equipamento_tag} — ${e.equipamento_nome} <span style="opacity:0.7">(${e.funcionario_nome})</span></div>`).join('') || '<div>Sem registros</div>'}
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Estoque Baixo</h3>
+        <div class="small-list">
+          <div><b>EPIs:</b> ${baixo.epis.map(i => i.nome + ' (' + i.estoque + ')').join(', ') || 'nenhum'}</div>
+          <div><b>Consumíveis:</b> ${baixo.consumiveis.map(i => i.nome + ' (' + i.estoque + ')').join(', ') || 'nenhum'}</div>
+          <div><b>Produtos:</b> ${baixo.produtos.map(i => i.nome + ' (' + i.estoque + ')').join(', ') || 'nenhum'}</div>
+        </div>
+      </div>
+    `;
+  } catch(err) {
+    el.innerHTML = `<div class="card" style="grid-column:1/-1;color:#f87171">Erro ao carregar dashboard: ${err.message}</div>`;
+  }
 }
 
 

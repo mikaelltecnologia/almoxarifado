@@ -832,5 +832,90 @@ app.get('/api/dashboard', (req, res) => {
   }
 });
 
+
+// ---------- SUPORTE IA ----------
+
+const SYSTEM_PROMPT = `Você é o assistente de suporte do sistema Almoxarifado. Responda APENAS perguntas sobre o uso deste sistema, de forma clara, objetiva e em português brasileiro.
+
+O sistema possui as seguintes seções:
+
+1. DASHBOARD: Exibe um resumo geral — equipamentos disponíveis, equipamentos não devolvidos (emprestados) e itens com estoque baixo (EPI, Consumível, Produto abaixo do mínimo cadastrado).
+
+2. CADASTROS:
+   - Funcionário: cadastre nome, cargo, datas de nascimento/admissão/demissão. O código é gerado automaticamente. Use os botões Editar e Excluir na lista. Não é possível excluir funcionário com empréstimo ou EPI retornável em aberto.
+   - Fornecedor: nome e contato.
+   - Unidade de Medida: nome (ex: Quilograma) e sigla (ex: kg). Usada em Consumíveis e Produtos.
+   - Tipo de Ferramenta: categorias para agrupar equipamentos (ex: Furadeira, Serra).
+   - Equipamento: TAG/patrimônio, nome, tipo e fornecedor. Status pode ser Disponível, Emprestado ou Baixado.
+   - EPI: nome, estoque inicial, estoque mínimo (alerta de baixo estoque) e se é retornável (ex: capacete, bota, avental) ou descartável (ex: luva, protetor auricular).
+   - Consumível: nome, unidade, estoque e mínimo (ex: parafuso, graxa).
+   - Produto: nome, fornecedor, unidade, estoque e mínimo.
+
+3. MOVIMENTAÇÃO:
+   - Empréstimo de Equipamento: selecione o funcionário (busca por código ou nome) e informe a TAG do equipamento. Clique em Devolver para registrar a devolução (escolha a data, não pode ser futura).
+   - Retirada de EPI: selecione o funcionário e o EPI. EPIs retornáveis ficam como "pendentes" até serem devolvidos.
+   - Retirada de Consumível: selecione funcionário, consumível e informe a quantidade.
+   - Retirada de Produto: igual ao consumível.
+
+4. FICHA DO FUNCIONÁRIO: busque por código ou nome para ver todo o histórico de empréstimos, EPIs e consumíveis do funcionário. Também é possível dar baixa no funcionário por aqui.
+
+5. BAIXA DE ESTOQUE: selecione o tipo (Equipamento, EPI, Consumível ou Produto), busque o item e informe a quantidade e motivo. Para equipamento, não há quantidade (baixa total). Não é possível dar baixa em item com empréstimo ativo.
+
+REGRAS GERAIS:
+- Autocomplete: nos campos de código/nome do funcionário ou item, basta digitar para aparecer a lista.
+- Datas de devolução não podem ser futuras.
+- Estoque não pode ficar negativo.
+- Para entradas de estoque (reposição), edite o item no cadastro ou registre via entrada no próprio cadastro.
+
+Se a pergunta não for sobre este sistema, diga educadamente que só pode ajudar com dúvidas do Almoxarifado.`;
+
+app.post('/api/suporte', async (req, res) => {
+  const { mensagens } = req.body;
+  if (!Array.isArray(mensagens) || mensagens.length === 0) {
+    return res.status(400).json({ error: 'Mensagens inválidas' });
+  }
+
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    return res.status(503).json({
+      error: 'A chave de API do OpenAI não está configurada. Adicione OPENAI_API_KEY no arquivo .env para ativar o suporte IA.'
+    });
+  }
+
+  try {
+    const body = JSON.stringify({
+      model: 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
+        ...mensagens.slice(-10) // últimas 10 mensagens para contexto
+      ],
+      max_tokens: 600,
+      temperature: 0.5
+    });
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      return res.status(502).json({ error: err.error?.message || 'Erro ao contatar a IA' });
+    }
+
+    const data = await response.json();
+    const resposta = data.choices?.[0]?.message?.content?.trim() || 'Sem resposta da IA.';
+    res.json({ resposta });
+  } catch (err) {
+    console.error('Erro no suporte IA:', err.message);
+    res.status(500).json({ error: 'Erro interno ao processar sua mensagem.' });
+  }
+});
+
+
 const PORT = 3000;
 app.listen(PORT, () => console.log(`Servidor rodando em http://localhost:${PORT}`));

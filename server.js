@@ -875,41 +875,40 @@ app.post('/api/suporte', async (req, res) => {
     return res.status(400).json({ error: 'Mensagens inválidas' });
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
     return res.status(503).json({
-      error: 'A chave do Google Gemini não está configurada. Adicione GEMINI_API_KEY no arquivo .env para ativar o suporte IA.'
+      error: 'Chave de IA não configurada. Adicione GROQ_API_KEY no arquivo .env.'
     });
   }
 
   try {
-    // Gemini usa "model" para o papel do assistente (não "assistant")
-    const contents = mensagens.slice(-10).map(m => ({
-      role: m.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: m.content }]
-    }));
-
     const body = JSON.stringify({
-      system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
-      contents,
-      generationConfig: { maxOutputTokens: 600, temperature: 0.5 }
+      model: 'llama-3.1-8b-instant',
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
+        ...mensagens.slice(-10)
+      ],
+      max_tokens: 600,
+      temperature: 0.5
     });
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-    const response = await fetch(url, {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
       body
     });
 
     if (!response.ok) {
       const err = await response.json().catch(() => ({}));
-      const msg = err.error?.message || 'Erro ao contatar o Gemini';
-      return res.status(502).json({ error: msg });
+      return res.status(502).json({ error: err.error?.message || 'Erro ao contatar a IA' });
     }
 
     const data = await response.json();
-    const resposta = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || 'Sem resposta da IA.';
+    const resposta = data.choices?.[0]?.message?.content?.trim() || 'Sem resposta da IA.';
     res.json({ resposta });
   } catch (err) {
     console.error('Erro no suporte IA:', err.message);

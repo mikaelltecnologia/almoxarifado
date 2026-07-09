@@ -919,4 +919,23 @@ app.post('/api/suporte', async (req, res) => {
 
 
 const PORT = 3000;
-app.listen(PORT, () => console.log(`Servidor rodando em http://localhost:${PORT}`));
+const server = app.listen(PORT, () => console.log(`Servidor rodando em http://localhost:${PORT}`));
+
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.log(`Porta ${PORT} ocupada. Encerrando processo anterior e reiniciando...`);
+    const { execSync } = require('child_process');
+    try {
+      // Mata o processo que está usando a porta (Windows)
+      execSync(
+        `for /f "tokens=5" %a in ('netstat -aon ^| findstr :${PORT} ^| findstr LISTENING') do taskkill /F /PID %a`,
+        { shell: 'cmd.exe', stdio: 'ignore' }
+      );
+    } catch (_) {}
+    setTimeout(() => {
+      app.listen(PORT, () => console.log(`Servidor rodando em http://localhost:${PORT}`));
+    }, 800);
+  } else {
+    throw err;
+  }
+});

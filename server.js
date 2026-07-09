@@ -9,8 +9,15 @@ const db = require('./db');
 const app = express();
 
 app.use(express.json());
+// Session secret: prefer env var, fallback to a generated secret (for dev)
+const crypto = require('crypto');
+const SESSION_SECRET = process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex');
+if (!process.env.SESSION_SECRET) {
+  console.warn('WARNING: SESSION_SECRET not set in .env — using a generated secret (development only)');
+}
+
 app.use(session({
-  secret: process.env.SESSION_SECRET,
+  secret: SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
   cookie: { maxAge: 1000 * 60 * 60 * 8 }

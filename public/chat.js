@@ -69,7 +69,7 @@
     setLoading(true);
 
     try {
-      const res = await fetch(window.API_BASE + '/api/suporte', {
+      const res = await fetch(API_BASE + '/api/suporte', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

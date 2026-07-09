@@ -8,11 +8,11 @@ const db = require('./db');
 
 const app = express();
 
-// CORS para desenvolvimento com Live Server (porta 5500)
+// CORS para desenvolvimento com Live Server (qualquer porta em localhost/127.0.0.1)
 app.use((req, res, next) => {
-  const allowed = ['http://127.0.0.1:5500', 'http://localhost:5500'];
-  const origin = req.headers.origin;
-  if (allowed.includes(origin)) {
+  const origin = req.headers.origin || '';
+  const isLocal = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+  if (isLocal) {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
@@ -36,8 +36,7 @@ app.use(session({
   saveUninitialized: false,
   cookie: {
     maxAge: 1000 * 60 * 60 * 8,
-    sameSite: 'none',
-    secure: false   // false para HTTP local; em produção usar true com HTTPS
+    sameSite: 'lax'   // 'lax' funciona em HTTP local; para HTTPS em produção use 'strict'
   }
 }));
 app.use(express.static(path.join(__dirname, 'public')));

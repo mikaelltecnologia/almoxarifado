@@ -1,5 +1,12 @@
-// Base URL para suportar acesso via Live Server (porta 5500) ou direto pelo Node (porta 3000)
-const API_BASE = (window.location.port === '3000' || window.location.port === '') ? '' : 'http://localhost:3000';
+// Base URL: sempre aponta para o backend Node (porta 3000).
+// Funciona via Live Server (qualquer porta), localhost:3000 ou 127.0.0.1
+const API_BASE = (() => {
+  const { hostname, port } = window.location;
+  // já estamos no próprio servidor Node — chamadas relativas
+  if (port === '3000') return '';
+  // Live Server ou outro host — aponta explicitamente para o Node
+  return 'http://localhost:3000';
+})();
 
 // checa sessão e carrega dashboard inicial
 fetch(API_BASE + '/api/session', { credentials: 'include' }).then(r => r.json()).then(d => {
@@ -359,8 +366,8 @@ function editarFornecedor(id, nome, contato) {
 }
 
 async function carregarFornecedores() {
-  const res = await fetch(API_BASE + '/api/fornecedores', { credentials: 'include' });
-  const fornecedores = await res.json();
+  const fornecedores = await api('/api/fornecedores');
+  if (!fornecedores || fornecedores.error) return;
   const tbody = document.getElementById('lista-fornecedores');
   tbody.innerHTML = '';
 
@@ -387,16 +394,8 @@ async function carregarFornecedores() {
 
 async function excluirFornecedor(id) {
   if (!confirm('Tem certeza que deseja excluir este fornecedor?')) return;
-
-  const res = await fetch(API_BASE + `/api/fornecedores/${id}`, { method: 'DELETE', credentials: 'include' });
-  const data = await res.json();
-
-  if (!res.ok) {
-    alert(data.error || 'Erro ao excluir fornecedor');
-    return;
-  }
-
-  carregarFornecedores();
+  const data = await api('/api/fornecedores/' + id, 'DELETE');
+  if (data && data.ok) carregarFornecedores();
 }
 
 // ---- Tipo de Ferramenta ----

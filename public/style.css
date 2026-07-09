@@ -430,6 +430,15 @@ body::before {
   margin-bottom: 16px;
 }
 
+/* Dashboard layout: center and align the three main cards responsively */
+#dashboard {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  align-items: start;
+  width: 100%;
+}
+
 .card h3 {
   margin-top: 0;
   margin-bottom: 12px;

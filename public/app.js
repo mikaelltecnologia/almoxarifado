@@ -69,16 +69,20 @@ async function loadDashboard() {
       <h3>Equipamentos Não Devolvidos <span style="font-weight:600; opacity:0.85">(${d.equipamentos_emprestados.length})</span></h3>
       <div class="stat-bar"><div class="stat-count">${d.equipamentos_emprestados.length}</div></div>
       <div class="small-list">
-        ${d.equipamentos_emprestados.slice(0,6).map(e => `<div>${e.equipamento_tag} — ${e.equipamento_nome} <span style="opacity:0.7">(${e.funcionario_nome})</span></div>`).join('') || '<div>Sem registros</div>'}
+        ${d.equipamentos_emprestados.slice(0,6).map(e => {
+          const days = e.data_emprestimo ? Math.floor((Date.now() - new Date(e.data_emprestimo).getTime()) / (1000*60*60*24)) : 0;
+          const badge = days > 30 ? `<span class="badge critical">Crítico ${days}d</span>` : (days > 7 ? `<span class="badge warn">Atraso ${days}d</span>` : '');
+          return `<div>${e.equipamento_tag} — ${e.equipamento_nome} <span style="opacity:0.7">(${e.funcionario_nome})</span> ${badge}</div>`;
+        }).join('') || '<div>Sem registros</div>'}
       </div>
     </div>
 
     <div class="card">
       <h3>Estoque Baixo</h3>
       <div class="small-list">
-        <div><b>EPIs:</b> ${d.estoque_baixo.epis.map(i => i.nome + ' (' + i.estoque + ')').join(', ') || 'nenhum'}</div>
-        <div><b>Consumíveis:</b> ${d.estoque_baixo.consumiveis.map(i => i.nome + ' (' + i.estoque + ')').join(', ') || 'nenhum'}</div>
-        <div><b>Produtos:</b> ${d.estoque_baixo.produtos.map(i => i.nome + ' (' + i.estoque + ')').join(', ') || 'nenhum'}</div>
+        <div><b>EPIs:</b> ${d.estoque_baixo.epis.map(i => `${i.nome} (${i.estoque}) <span class="badge critical">Baixo</span>`).join(', ') || 'nenhum'}</div>
+        <div><b>Consumíveis:</b> ${d.estoque_baixo.consumiveis.map(i => `${i.nome} (${i.estoque}) <span class="badge critical">Baixo</span>`).join(', ') || 'nenhum'}</div>
+        <div><b>Produtos:</b> ${d.estoque_baixo.produtos.map(i => `${i.nome} (${i.estoque}) <span class="badge critical">Baixo</span>`).join(', ') || 'nenhum'}</div>
       </div>
     </div>
   `;

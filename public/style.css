@@ -493,6 +493,32 @@ th {
   font-size: 0.95rem;
 }
 
+/* Badges for critical/warning items */
+.badge {
+  display: inline-block;
+  padding: 4px 8px;
+  margin-left: 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.badge.critical {
+  background: linear-gradient(135deg, rgba(220,38,38,0.95), rgba(220,38,38,0.8));
+  color: white;
+  box-shadow: 0 6px 14px rgba(220,38,38,0.18);
+}
+.badge.warn {
+  background: linear-gradient(135deg, rgba(245,158,11,0.95), rgba(250,204,21,0.85));
+  color: #1b1b1b;
+  box-shadow: 0 6px 14px rgba(245,158,11,0.12);
+}
+.badge.info {
+  background: rgba(20,184,166,0.16);
+  color: #e6fff9;
+  border: 1px solid rgba(20,184,166,0.28);
+}
+
 /* Floating support button (WhatsApp) */
 #support-fab {
   position: fixed;

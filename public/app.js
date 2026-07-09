@@ -272,14 +272,15 @@ async function salvarFuncionario() {
     data_demissao: document.getElementById('f_demissao').value
   };
 
+  let r;
   if (editandoFuncionario) {
-    await api('/api/funcionarios/' + editandoFuncionario, 'PUT', dados);
+    r = await api('/api/funcionarios/' + editandoFuncionario, 'PUT', dados);
     editandoFuncionario = null;
     document.querySelector('#cadastros_funcionario button.action').textContent = 'Salvar';
   } else {
-    await api('/api/funcionarios', 'POST', dados);
+    r = await api('/api/funcionarios', 'POST', dados);
   }
-
+  if (!r || r.error) return;
   ['f_nome','f_cargo','f_nascimento','f_admissao','f_demissao'].forEach(id => document.getElementById(id).value = '');
   alert('Salvo com sucesso');
   carregarListaFuncionarios();
@@ -327,13 +328,15 @@ async function salvarFornecedor() {
     nome: document.getElementById('fo_nome').value,
     contato: document.getElementById('fo_contato').value
   };
+  let r;
   if (editandoFornecedor) {
-    await api('/api/fornecedores/' + editandoFornecedor, 'PUT', dados);
+    r = await api('/api/fornecedores/' + editandoFornecedor, 'PUT', dados);
     editandoFornecedor = null;
     document.querySelector('#cadastros_fornecedor button.action').textContent = 'Salvar';
   } else {
-    await api('/api/fornecedores', 'POST', dados);
+    r = await api('/api/fornecedores', 'POST', dados);
   }
+  if (!r || r.error) return;
   document.getElementById('fo_nome').value = '';
   document.getElementById('fo_contato').value = '';
   alert('Salvo com sucesso');
@@ -394,13 +397,15 @@ let editandoTipo = null;
 
 async function salvarTipoFerramenta() {
   const dados = { nome: document.getElementById('tf_nome').value };
+  let r;
   if (editandoTipo) {
-    await api('/api/tipos-ferramentas/' + editandoTipo, 'PUT', dados);
+    r = await api('/api/tipos-ferramentas/' + editandoTipo, 'PUT', dados);
     editandoTipo = null;
     document.querySelector('#cadastros_tipoferramenta button.action').textContent = 'Salvar';
   } else {
-    await api('/api/tipos-ferramentas', 'POST', dados);
+    r = await api('/api/tipos-ferramentas', 'POST', dados);
   }
+  if (!r || r.error) return;
   document.getElementById('tf_nome').value = '';
   alert('Salvo com sucesso');
   preencherSelects();
@@ -442,13 +447,15 @@ async function salvarUnidade() {
     nome: document.getElementById('un_nome').value,
     sigla: document.getElementById('un_sigla').value
   };
+  let r;
   if (editandoUnidade) {
-    await api('/api/unidades/' + editandoUnidade, 'PUT', dados);
+    r = await api('/api/unidades/' + editandoUnidade, 'PUT', dados);
     editandoUnidade = null;
     document.querySelector('#cadastros_unidade button.action').textContent = 'Salvar';
   } else {
-    await api('/api/unidades', 'POST', dados);
+    r = await api('/api/unidades', 'POST', dados);
   }
+  if (!r || r.error) return;
   document.getElementById('un_nome').value = '';
   document.getElementById('un_sigla').value = '';
   alert('Salvo com sucesso');
@@ -495,14 +502,16 @@ async function salvarEquipamento() {
     tipo_id: document.getElementById('eq_tipo').value,
     fornecedor_id: document.getElementById('eq_fornecedor').value || null
   };
+  let r;
   if (editandoEquipamento) {
-    await api('/api/equipamentos/' + editandoEquipamento, 'PUT', dados);
+    r = await api('/api/equipamentos/' + editandoEquipamento, 'PUT', dados);
     editandoEquipamento = null;
     document.getElementById('eq_tag').disabled = false;
     document.querySelector('#cadastros_equipamento button.action').textContent = 'Salvar';
   } else {
-    await api('/api/equipamentos', 'POST', dados);
+    r = await api('/api/equipamentos', 'POST', dados);
   }
+  if (!r || r.error) return;
   document.getElementById('eq_tag').value = '';
   document.getElementById('eq_nome').value = '';
   document.getElementById('eq_fornecedor').value = '';
@@ -563,15 +572,17 @@ async function salvarEpi() {
     estoque_minimo: Number(document.getElementById('ep_min').value),
     retornavel: document.getElementById('ep_retornavel').checked
   };
+  let r;
   if (editandoEpi) {
-    await api('/api/epis/' + editandoEpi, 'PUT', dados);
+    r = await api('/api/epis/' + editandoEpi, 'PUT', dados);
     editandoEpi = null;
     document.getElementById('ep_estoque').disabled = false;
     document.querySelector('#cadastros_epi button.action').textContent = 'Salvar';
   } else {
     dados.estoque = Number(document.getElementById('ep_estoque').value);
-    await api('/api/epis', 'POST', dados);
+    r = await api('/api/epis', 'POST', dados);
   }
+  if (!r || r.error) return;
   document.getElementById('ep_nome').value = '';
   document.getElementById('ep_estoque').value = '';
   document.getElementById('ep_min').value = '';
@@ -631,15 +642,17 @@ async function salvarConsumivel() {
     unidade_id: document.getElementById('co_unidade').value || null,
     estoque_minimo: Number(document.getElementById('co_min').value)
   };
+  let r;
   if (editandoConsumivel) {
-    await api('/api/consumiveis/' + editandoConsumivel, 'PUT', dados);
+    r = await api('/api/consumiveis/' + editandoConsumivel, 'PUT', dados);
     editandoConsumivel = null;
     document.getElementById('co_estoque').disabled = false;
     document.querySelector('#cadastros_consumivel button.action').textContent = 'Salvar';
   } else {
     dados.estoque = Number(document.getElementById('co_estoque').value);
-    await api('/api/consumiveis', 'POST', dados);
+    r = await api('/api/consumiveis', 'POST', dados);
   }
+  if (!r || r.error) return;
   document.getElementById('co_nome').value = '';
   document.getElementById('co_estoque').value = '';
   document.getElementById('co_min').value = '';
@@ -699,15 +712,17 @@ async function salvarProduto() {
     unidade_id: document.getElementById('pr_unidade').value || null,
     estoque_minimo: Number(document.getElementById('pr_min').value)
   };
+  let r;
   if (editandoProduto) {
-    await api('/api/produtos/' + editandoProduto, 'PUT', dados);
+    r = await api('/api/produtos/' + editandoProduto, 'PUT', dados);
     editandoProduto = null;
     document.getElementById('pr_estoque').disabled = false;
     document.querySelector('#cadastros_produto button.action').textContent = 'Salvar';
   } else {
     dados.estoque = Number(document.getElementById('pr_estoque').value);
-    await api('/api/produtos', 'POST', dados);
+    r = await api('/api/produtos', 'POST', dados);
   }
+  if (!r || r.error) return;
   document.getElementById('pr_nome').value = '';
   document.getElementById('pr_estoque').value = '';
   document.getElementById('pr_min').value = '';
@@ -768,12 +783,12 @@ function pedirDataDevolucao() {
     overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:1000;';
 
     overlay.innerHTML = `
-      <div style="background:#fff;padding:20px;border-radius:8px;min-width:280px;">
-        <h3 style="margin-top:0;">Data da Devolução</h3>
-        <input type="date" id="modal_data_devolucao" max="${hoje}" value="${hoje}" style="width:100%;padding:8px;margin-bottom:12px;">
+      <div style="background:rgba(15,25,40,0.95);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.15);padding:28px 24px;border-radius:16px;min-width:300px;box-shadow:0 25px 50px rgba(0,0,0,0.5);">
+        <h3 style="margin-top:0;color:#fff;font-size:1.1rem;">Data da Devolução</h3>
+        <input type="date" id="modal_data_devolucao" max="${hoje}" value="${hoje}" style="width:100%;padding:10px 12px;margin-bottom:16px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);border-radius:10px;color:#fff;font-size:1rem;box-sizing:border-box;">
         <div style="display:flex;gap:8px;justify-content:flex-end;">
-          <button id="modal_cancelar">Cancelar</button>
-          <button id="modal_confirmar" class="action">Confirmar</button>
+          <button id="modal_cancelar" style="padding:8px 18px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);background:transparent;color:#fff;cursor:pointer;">Cancelar</button>
+          <button id="modal_confirmar" class="action" style="padding:8px 18px;">Confirmar</button>
         </div>
       </div>
     `;
@@ -1011,11 +1026,17 @@ function loadMovimentacao() {
 }
 
 async function emprestar() {
-  await api('/api/emprestimos', 'POST', {
+  const r = await api('/api/emprestimos', 'POST', {
     funcionario_codigo: document.getElementById('m_func').value,
     equipamento_tag: document.getElementById('m_tag').value,
     observacao: document.getElementById('m_obs').value
   });
+  if (!r || r.error) return;
+  document.getElementById('m_func').value = '';
+  document.getElementById('m_nome').value = '';
+  document.getElementById('m_tag').value = '';
+  document.getElementById('m_obs').value = '';
+  alert('Empréstimo registrado');
   carregarEmprestimosAtivos();
 }
 
@@ -1045,11 +1066,16 @@ async function devolver(id) {
 
 
 async function retirarEpi() {
-  await api('/api/retiradas-epi', 'POST', {
+  const r = await api('/api/retiradas-epi', 'POST', {
     funcionario_codigo: document.getElementById('epi_func').value,
     epi_codigo: document.getElementById('epi_codigo').value,
     observacao: document.getElementById('epi_obs').value
   });
+  if (!r || r.error) return;
+  document.getElementById('epi_func').value = '';
+  document.getElementById('epi_nome').value = '';
+  document.getElementById('epi_codigo').value = '';
+  document.getElementById('epi_obs').value = '';
   alert('Retirada registrada');
   carregarEpisPendentes();
 }
@@ -1085,23 +1111,35 @@ async function devolverEpi(id) {
 
 
 async function retirarConsumivel() {
-  await api('/api/retiradas-consumivel', 'POST', {
+  const r = await api('/api/retiradas-consumivel', 'POST', {
     funcionario_codigo: document.getElementById('cons_func').value,
     consumivel_codigo: document.getElementById('cons_codigo').value,
     quantidade: Number(document.getElementById('cons_qtd').value),
     observacao: document.getElementById('cons_obs').value
   });
+  if (!r || r.error) return;
+  document.getElementById('cons_func').value = '';
+  document.getElementById('cons_nome').value = '';
+  document.getElementById('cons_codigo').value = '';
+  document.getElementById('cons_qtd').value = '1';
+  document.getElementById('cons_obs').value = '';
   alert('Retirada registrada');
   carregarRetiradasConsumivel();
 }
 
 async function retirarProduto() {
-  await api('/api/retiradas-produto', 'POST', {
+  const r = await api('/api/retiradas-produto', 'POST', {
     funcionario_codigo: document.getElementById('prod_func').value,
     produto_codigo: document.getElementById('prod_codigo').value,
     quantidade: Number(document.getElementById('prod_qtd').value),
     observacao: document.getElementById('prod_obs').value
   });
+  if (!r || r.error) return;
+  document.getElementById('prod_func').value = '';
+  document.getElementById('prod_nome').value = '';
+  document.getElementById('prod_codigo').value = '';
+  document.getElementById('prod_qtd').value = '1';
+  document.getElementById('prod_obs').value = '';
   alert('Retirada registrada');
   carregarRetiradasProduto();
 }
@@ -1190,9 +1228,9 @@ function loadFicha() {
 
 async function buscarFicha() {
   const codigo = document.getElementById('fi_codigo').value;
-  const res = await fetch('/api/ficha/' + codigo);
-  const data = await res.json();
-  if (!res.ok) { document.getElementById('ficha_resultado').innerHTML = data.error; return; }
+  if (!codigo) { alert('Informe o código ou selecione o funcionário'); return; }
+  const data = await api('/api/ficha/' + codigo);
+  if (data.error) { document.getElementById('ficha_resultado').innerHTML = `<div class="card" style="color:#f87171">${data.error}</div>`; return; }
 
   document.getElementById('ficha_resultado').innerHTML = `
     <div class="card">

@@ -434,24 +434,6 @@ app.post('/api/consumiveis', (req, res) => {
   res.json({ ok: true, codigo: r.lastInsertRowid });
 });
 
-app.post('/api/consumiveis/:codigo/entrada', (req, res) => {
-  const { quantidade } = req.body;
-  const qtd = Number(quantidade);
-  if (!qtd || qtd <= 0) return res.status(400).json({ error: 'Quantidade inválida' });
-
-  const item = db.prepare('SELECT * FROM consumiveis WHERE codigo = ?').get(req.params.codigo);
-  if (!item) return res.status(404).json({ error: 'Consumível não encontrado' });
-
-  db.prepare('UPDATE consumiveis SET estoque = estoque + ? WHERE codigo = ?').run(qtd, req.params.codigo);
-  res.json({ ok: true });
-});
-
-app.delete('/api/consumiveis/:codigo', (req, res) => {
-  const info = db.prepare('DELETE FROM consumiveis WHERE codigo = ?').run(req.params.codigo);
-  if (info.changes === 0) return res.status(404).json({ error: 'Consumível não encontrado' });
-  res.json({ ok: true });
-});
-
 app.get('/api/produtos', (req, res) => {
   const lista = db.prepare(`
     SELECT p.*, f.nome as fornecedor_nome, u.sigla as unidade_sigla, u.nome as unidade_nome
@@ -470,13 +452,6 @@ app.post('/api/produtos', (req, res) => {
     .run(nome, fornecedor_id || null, unidade_id || null, estoque || 0, estoque_minimo || 0);
   res.json({ ok: true, codigo: r.lastInsertRowid });
 });
-
-app.delete('/api/produtos/:codigo', (req, res) => {
-  const info = db.prepare('DELETE FROM produtos WHERE codigo = ?').run(req.params.codigo);
-  if (info.changes === 0) return res.status(404).json({ error: 'Produto não encontrado' });
-  res.json({ ok: true });
-});
-
 
 // ---------- MOVIMENTAÇÃO: EMPRÉSTIMO DE EQUIPAMENTO ----------
 

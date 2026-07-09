@@ -24,6 +24,10 @@ async function api(url, method = 'GET', body = null) {
   if (body) opts.body = JSON.stringify(body);
   const res = await fetch(url, opts);
   const data = await res.json();
+  if (res.status === 401) {
+    window.location.href = '/login.html';
+    return data;
+  }
   if (!res.ok) alert(data.error || 'Erro');
   return data;
 }
@@ -837,7 +841,8 @@ function criarDropdown(input) {
   }
   const wrapper = document.createElement('div');
   wrapper.style.position = 'relative';
-  wrapper.style.display = 'inline-block';
+  wrapper.style.display = 'block';
+  wrapper.style.width = '100%';
   input.parentNode.insertBefore(wrapper, input);
   wrapper.appendChild(input);
 

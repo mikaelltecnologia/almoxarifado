@@ -875,40 +875,41 @@ app.post('/api/suporte', async (req, res) => {
     return res.status(400).json({ error: 'Mensagens inválidas' });
   }
 
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     return res.status(503).json({
-      error: 'A chave de API do OpenAI não está configurada. Adicione OPENAI_API_KEY no arquivo .env para ativar o suporte IA.'
+      error: 'A chave do Google Gemini não está configurada. Adicione GEMINI_API_KEY no arquivo .env para ativar o suporte IA.'
     });
   }
 
   try {
+    // Gemini usa "model" para o papel do assistente (não "assistant")
+    const contents = mensagens.slice(-10).map(m => ({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: m.content }]
+    }));
+
     const body = JSON.stringify({
-      model: 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        ...mensagens.slice(-10) // últimas 10 mensagens para contexto
-      ],
-      max_tokens: 600,
-      temperature: 0.5
+      system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+      contents,
+      generationConfig: { maxOutputTokens: 600, temperature: 0.5 }
     });
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    const response = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
+      headers: { 'Content-Type': 'application/json' },
       body
     });
 
     if (!response.ok) {
       const err = await response.json().catch(() => ({}));
-      return res.status(502).json({ error: err.error?.message || 'Erro ao contatar a IA' });
+      const msg = err.error?.message || 'Erro ao contatar o Gemini';
+      return res.status(502).json({ error: msg });
     }
 
     const data = await response.json();
-    const resposta = data.choices?.[0]?.message?.content?.trim() || 'Sem resposta da IA.';
+    const resposta = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || 'Sem resposta da IA.';
     res.json({ resposta });
   } catch (err) {
     console.error('Erro no suporte IA:', err.message);

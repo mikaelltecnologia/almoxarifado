@@ -1,11 +1,14 @@
+// Base URL para suportar acesso via Live Server (porta 5500) ou direto pelo Node (porta 3000)
+const API_BASE = (window.location.port === '3000' || window.location.port === '') ? '' : 'http://localhost:3000';
+
 // checa sessão e carrega dashboard inicial
-fetch('/api/session').then(r => r.json()).then(d => {
+fetch(API_BASE + '/api/session', { credentials: 'include' }).then(r => r.json()).then(d => {
   if (!d.user) window.location.href = '/login.html';
   else loadDashboard();
 });
 
 function logout() {
-  fetch('/api/logout', { method: 'POST' }).then(() => window.location.href = '/login.html');
+  fetch(API_BASE + '/api/logout', { method: 'POST', credentials: 'include' }).then(() => window.location.href = '/login.html');
 }
 
 document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -20,9 +23,9 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 });
 
 async function api(url, method = 'GET', body = null) {
-  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  const opts = { method, headers: { 'Content-Type': 'application/json' }, credentials: 'include' };
   if (body) opts.body = JSON.stringify(body);
-  const res = await fetch(url, opts);
+  const res = await fetch(API_BASE + url, opts);
   const data = await res.json();
   if (res.status === 401) {
     window.location.href = '/login.html';
@@ -62,7 +65,7 @@ async function loadDashboard() {
   const el = document.getElementById('dashboard');
   el.innerHTML = '<div class="card" style="grid-column:1/-1;text-align:center;opacity:0.7">Carregando...</div>';
   try {
-    const d = await fetch('/api/dashboard').then(r => r.json());
+    const d = await fetch(API_BASE + '/api/dashboard', { credentials: 'include' }).then(r => r.json());
     if (d.error) throw new Error(d.error);
 
     const disp = d.equipamentos_disponiveis || [];
@@ -356,7 +359,7 @@ function editarFornecedor(id, nome, contato) {
 }
 
 async function carregarFornecedores() {
-  const res = await fetch('/api/fornecedores');
+  const res = await fetch(API_BASE + '/api/fornecedores', { credentials: 'include' });
   const fornecedores = await res.json();
   const tbody = document.getElementById('lista-fornecedores');
   tbody.innerHTML = '';
@@ -385,7 +388,7 @@ async function carregarFornecedores() {
 async function excluirFornecedor(id) {
   if (!confirm('Tem certeza que deseja excluir este fornecedor?')) return;
 
-  const res = await fetch(`/api/fornecedores/${id}`, { method: 'DELETE' });
+  const res = await fetch(API_BASE + `/api/fornecedores/${id}`, { method: 'DELETE', credentials: 'include' });
   const data = await res.json();
 
   if (!res.ok) {

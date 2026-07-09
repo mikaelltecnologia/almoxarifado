@@ -463,12 +463,14 @@ app.get('/api/emprestimos', (req, res) => {
        JOIN funcionarios f ON f.codigo = e.funcionario_codigo
        JOIN equipamentos eq ON eq.tag = e.equipamento_tag
        LEFT JOIN fornecedores fo ON fo.id = eq.fornecedor_id
-       WHERE e.data_devolucao IS NULL`
+       WHERE e.data_devolucao IS NULL
+       ORDER BY e.data_emprestimo DESC`
     : `SELECT e.*, f.nome as funcionario_nome, eq.nome as equipamento_nome, fo.nome as fornecedor_nome
        FROM emprestimos e
        JOIN funcionarios f ON f.codigo = e.funcionario_codigo
        JOIN equipamentos eq ON eq.tag = e.equipamento_tag
-       LEFT JOIN fornecedores fo ON fo.id = eq.fornecedor_id`;
+       LEFT JOIN fornecedores fo ON fo.id = eq.fornecedor_id
+       ORDER BY e.data_emprestimo DESC`;
   res.json(db.prepare(sql).all());
 });
 

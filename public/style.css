@@ -455,16 +455,30 @@ table {
 th, td {
   padding: 10px 12px;
   text-align: left;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
   font-size: 0.95rem;
 }
 
 th {
-  color: rgba(255, 255, 255, 0.7);
-  background: #f8fafc;
+  color: rgba(255, 255, 255, 0.85);
+  background: transparent;
   font-size: 0.82rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+}
+
+/* Make table responsive inside cards */
+.card table {
+  width: 100%;
+  display: block;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Improve header contrast for dark theme */
+.card table thead th {
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border-bottom: 1px solid rgba(255,255,255,0.06);
 }
 
 tr:last-child td {

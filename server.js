@@ -34,7 +34,11 @@ app.use(session({
   secret: SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
-  cookie: { maxAge: 1000 * 60 * 60 * 8 }
+  cookie: {
+    maxAge: 1000 * 60 * 60 * 8,
+    sameSite: 'none',
+    secure: false   // false para HTTP local; em produção usar true com HTTPS
+  }
 }));
 app.use(express.static(path.join(__dirname, 'public')));
 

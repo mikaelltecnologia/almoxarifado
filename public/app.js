@@ -843,7 +843,7 @@ function criarDropdown(input) {
 
   const div = document.createElement('div');
   div.className = 'ac-dropdown';
-  div.style.cssText = 'display:none;border:1px solid #ccc;background:#fff;max-height:160px;overflow:auto;position:absolute;left:0;top:100%;width:100%;z-index:100;box-shadow:0 2px 6px rgba(0,0,0,.15);';
+  div.style.cssText = 'display:none;border:1px solid rgba(255,255,255,0.15);background:#0d1f30;max-height:180px;overflow:auto;position:absolute;left:0;top:100%;width:100%;z-index:100;box-shadow:0 8px 24px rgba(0,0,0,0.4);border-radius:10px;';
   wrapper.appendChild(div);
 
   input.dataset.acWrapped = 'true';
@@ -858,8 +858,9 @@ function renderDropdown(div, lista, onSelect) {
     `<div class="ac-item" data-codigo="${f.codigo}" style="padding:6px 10px;cursor:pointer;">${String(f.codigo).padStart(3,'0')} - ${f.nome}</div>`
   ).join('');
   div.querySelectorAll('.ac-item').forEach(item => {
-    item.onmouseenter = () => item.style.background = '#eee';
+    item.onmouseenter = () => item.style.background = 'rgba(20,184,166,0.2)';
     item.onmouseleave = () => item.style.background = '';
+    item.style.color = '#fff';
     item.onclick = () => { onSelect(item.dataset.codigo); div.style.display = 'none'; };
   });
 }

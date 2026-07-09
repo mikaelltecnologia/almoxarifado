@@ -520,6 +520,11 @@ select {
   backdrop-filter: blur(6px);
 }
 
+option {
+  background-color: #0d1f30;
+  color: #ffffff;
+}
+
 input:focus,
 select:focus {
   outline: none;
